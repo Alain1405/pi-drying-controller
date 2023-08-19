@@ -1,1 +1,1 @@
-apscheduler=3.10.3
+apscheduler==3.10.3
