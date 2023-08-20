@@ -10,11 +10,12 @@ Aim:
 - Temperature and humidity sensors
 
 ## Module
-- Gather sensors data
-- Send sensors data to prometheus
-- Relays control
-- Schedule of relays
-- Camera control
+- [ ] Gather sensors data
+- [ ] Send sensors data to prometheus
+- [ ] Relays control
+- [x] Schedule of relays
+- [ ] Camera control
+- [ ] Temperature control
 
 ## Resources
 - Monitor with [Prometheus](https://opensource.com/article/21/7/home-temperature-raspberry-pi-prometheus)
