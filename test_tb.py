@@ -10,13 +10,14 @@ import board
 
 load_dotenv()
 
+class ThingsBoardClient():
+    def __init():
+        pass
 THINGSBOARD_PI_ACCESS_TOKEN = os.getenv("THINGSBOARD_PI_ACCESS_TOKEN")
 THINGSBOARD_SERVER = os.getenv("THINGSBOARD_SERVER")
 THINGSBOARD_PORT = int(os.getenv("THINGSBOARD_PORT"))
 
-print(THINGSBOARD_SERVER, THINGSBOARD_PORT, THINGSBOARD_PI_ACCESS_TOKEN)
-
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(format="%(asctime)s - %(message)s", level=logging.INFO)
 
 client = None
 
@@ -25,16 +26,16 @@ period = 1.0
 
 
 # callback function that will call when we will change value of our Shared Attribute
-def attribute_callback(client, result):
-    print(client, result)
+def attribute_callback(result, _):
     # make sure that you paste YOUR shared attribute name
     period = result.get('blinkingPeriod', 1.0)
+    print(f"Period set to {period}")
 
 
 # callback function that will call when we will send RPC
 def rpc_callback(id, request_body):
     # request body contains method and other parameters
-    print(request_body)
+    print(f"Received rpc callback with body: {request_body}")
     method = request_body.get("method")
     if method == "getTelemetry":
         attributes, telemetry = get_data()
@@ -121,8 +122,8 @@ def main():
 
     # now attribute_callback will process shared attribute request from server
     sub_id_1 = client.subscribe_to_attribute("blinkingPeriod", attribute_callback)
-    sub_id_2 = client.subscribe_to_all_attributes(attribute_callback)
-    led = digitalio.DigitalInOut(board.PD14)
+    # sub_id_2 = client.subscribe_to_all_attributes(attribute_callback)
+    led = digitalio.DigitalInOut(board.D14)
     led.direction = digitalio.Direction.OUTPUT
     # now rpc_callback will process rpc requests from server
     client.set_server_side_rpc_request_handler(rpc_callback)
