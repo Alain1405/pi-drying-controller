@@ -1,1 +1,2 @@
 apscheduler==3.10.3
+tb-mqtt-client==1.5
