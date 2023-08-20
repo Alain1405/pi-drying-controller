@@ -53,6 +53,16 @@ def get_pi_data():
     used = (st.f_blocks - st.f_bfree) * st.f_frsize
     boot_time = os.popen("uptime -p").read()[:-1]
     avg_load = (cpu_usage + ram_usage) / 2
+    cpu_temp = float(os.popen("cat /sys/class/thermal/thermal_zone0/temp | awk '{print $1/1000}'")
+    .readline()
+        .replace("\n", "")
+        .replace(",", "."))
+    
+    gpu_temp = float(os.popen("vcgencmd measure_temp | grep  -o -E '[[:digit:]].*'")
+    .readline()
+        .replace("\n", "")
+        .replace("'C", "")
+        .replace(",", "."))
 
     attributes = {"ip_address": ip_address, "macaddress": mac_address}
     telemetry = {
@@ -63,6 +73,8 @@ def get_pi_data():
         "swap_memory_usage": swap_memory_usage,
         "boot_time": boot_time,
         "avg_load": avg_load,
+        "cpu_temp": cpu_temp,
+        "gpu_temp": gpu_temp
     }
     # print(attributes, telemetry)
     return attributes, telemetry
