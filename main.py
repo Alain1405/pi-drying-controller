@@ -1,9 +1,5 @@
 import sys, signal
 
-# import schedule
-
-
-from datetime import datetime, timedelta, time
 import logging
 from schedule_control import ScheduleControl
 
