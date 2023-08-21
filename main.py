@@ -2,10 +2,16 @@ import sys, signal
 
 import logging
 from schedule_control import ScheduleControl
+from tb_device_client import RPIDevice
+from settings import PUBLISHING_INTERVAL
+import time
+import os
 
 logging.basicConfig(format="%(asctime)s - %(message)s", level=logging.INFO)
 
 
+# from settings import DB_PATH
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger()
 
 
@@ -28,14 +34,14 @@ if __name__ == "__main__":
         ],
         "schedule": [
             {
-                "duration": 5,  # minutes,
+                "duration": 30,  # minutes,
                 "actions": [
                     {"id": 1, "status": 1},
                     {"id": 2, "status": 1},
                 ],
             },
             {
-                "duration": 5,  # minutes,
+                "duration": 30,  # minutes,
                 "actions": [
                     {"id": 0, "status": 1},
                     {"id": 4, "status": 1},
@@ -44,7 +50,7 @@ if __name__ == "__main__":
                 ],
             },
             {
-                "duration": 5,  # minutes,
+                "duration": 30,  # minutes,
                 "actions": [
                     {"id": 2, "status": 1},
                     {"id": 3, "status": 1},
@@ -54,7 +60,7 @@ if __name__ == "__main__":
             },
         ],
     }
-    scheduler = ScheduleControl(schedule, start_delay=5, monitor=False)
+    scheduler = ScheduleControl(schedule, start_delay=5)
 
     if len(sys.argv) > 1 and sys.argv[1] == "--clear":
         scheduler.clear()
@@ -68,7 +74,14 @@ if __name__ == "__main__":
     signal.signal(signal.SIGINT, signal_handler)
 
     try:
+        pi = RPIDevice(
+            os.getenv("THINGSBOARD_PI_ACCESS_TOKEN"),
+        )
         logging.info("Starting scheduler")
         scheduler.start()
+        while True:
+            pi.publish()
+            time.sleep(PUBLISHING_INTERVAL)
+
     except (KeyboardInterrupt, SystemExit):
         pass
