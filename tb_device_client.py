@@ -1,6 +1,6 @@
 import logging.handlers
 import os
-
+import shutil
 from tb_gateway_mqtt import TBDeviceMqttClient
 
 from dotenv import load_dotenv
@@ -144,10 +144,7 @@ class RPIDevice(ThingsBoardDevice):
             2,
         )
         ip_address = (
-            os.popen("""hostname -I""")
-            .readline()
-            .replace("\n", "")
-            .replace(",", ".")[:-1]
+            os.popen("""hostname -I""").readline().replace("\n", "").replace(",", ".")[:-1]
         )
         mac_address = (
             os.popen("""cat /sys/class/net/*/address""")
@@ -159,13 +156,13 @@ class RPIDevice(ThingsBoardDevice):
             os.popen("""ps -Al | grep -c bash""")
             .readline()
             .replace("\n", "")
-            .replace(",", ".")[:-1]
+            .replace(",", ".")
         )
         swap_memory_usage = (
             os.popen("free -m | grep Swap | awk '{print ($3/$2)*100}'")
             .readline()
             .replace("\n", "")
-            .replace(",", ".")[:-1]
+            .replace(",", ".")
         )
         ram_usage = float(
             os.popen("free -m | grep Mem | awk '{print ($3/$2) * 100}'")
@@ -173,19 +170,37 @@ class RPIDevice(ThingsBoardDevice):
             .replace("\n", "")
             .replace(",", ".")[:-1]
         )
-        st = os.statvfs("/")
-        used = (st.f_blocks - st.f_bfree) * st.f_frsize
+
+        disk_available = shutil.disk_usage("/").free / 1024 / 1024 / 1024
+        disk_used = shutil.disk_usage("/").used / 1024 / 1024 / 1024
         boot_time = os.popen("uptime -p").read()[:-1]
         avg_load = (cpu_usage + ram_usage) / 2
+        cpu_temp = float(
+            os.popen("cat /sys/class/thermal/thermal_zone0/temp | awk '{print $1/1000}'")
+            .readline()
+            .replace("\n", "")
+            .replace(",", ".")
+        )
+
+        gpu_temp = float(
+            os.popen("vcgencmd measure_temp | grep  -o -E '[[:digit:]].*'")
+            .readline()
+            .replace("\n", "")
+            .replace("'C", "")
+            .replace(",", ".")
+        )
 
         attributes = {"ip_address": ip_address, "macaddress": mac_address}
         telemetry = {
             "cpu_usage": cpu_usage,
             "processes_count": processes_count,
-            "disk_usage": used,
+            "disk_usage": disk_used,
+            "disk_available": disk_available,
             "RAM_usage": ram_usage,
             "swap_memory_usage": swap_memory_usage,
             "boot_time": boot_time,
             "avg_load": avg_load,
+            "cpu_temp": cpu_temp,
+            "gpu_temp": gpu_temp,
         }
         return attributes, telemetry
