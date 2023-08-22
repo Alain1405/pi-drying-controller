@@ -1,5 +1,14 @@
 # Raspberry PI controller for a drying room/rack
 
+## Requirements
+## Setup
+
+- `sudo cp configs/etc/systemd/system/rpimonitor.service /etc/systemd/system/`
+- `sudo systemctl daemon-reload`
+- `sudo systemctl enable rpimonitor.service`
+- `sudo systemctl start rpimonitor.service`
+- `sudo systemctl status rpimonitor.service`
+- `sudo journalctl -u rpimonitor.service`
 Aim:
 - Contrinuosly monitor status
 - Create an on-off cycle over a few hours for fans and heater

@@ -1,0 +1,13 @@
+# /etc/systemd/system/sensor-metrics.service
+[Unit]
+Description=Drying room monitorin and control
+After=network.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+Restart=always
+ExecStart=/home/alain/code/pi-drying-controller/.venv/bin/python /home/alain/code/pi-drying-controller/main.py
+
+[Install]
+WantedBy=multi-user.target
