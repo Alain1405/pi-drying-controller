@@ -2,6 +2,9 @@ import logging.handlers
 import os
 import shutil
 from tb_gateway_mqtt import TBDeviceMqttClient
+import time
+import adafruit_dht
+from board import D5, D6, D13, D19
 
 from dotenv import load_dotenv
 
@@ -30,6 +33,7 @@ class ThingsBoardDevice:
     def __init__(
         self, ACCESS_TOKEN, states: dict = {}, rpc_callbacks: dict = {}
     ) -> None:
+        logging.info(f"Initializing ThingsBoardDevice {self.__class__.__name__}")
         self.client = TBDeviceMqttClient(
             THINGSBOARD_SERVER, THINGSBOARD_PORT, ACCESS_TOKEN
         )
@@ -44,6 +48,12 @@ class ThingsBoardDevice:
                 # Initiate states
                 setattr(self, key, value)
 
+            self.client.subscribe_to_all_attributes(self.attribute_callback)
+            # Get all states from server
+            self.client.request_attributes(
+                shared_keys=list(self.states.keys()), callback=self.sync_state
+            )
+
         if rpc_callbacks:
             if type(rpc_callbacks) is not dict:
                 raise TypeError(
@@ -52,14 +62,9 @@ class ThingsBoardDevice:
             self.rpc_callbacks = rpc_callbacks
             self.client.set_server_side_rpc_request_handler(self.register_rpc_callbacks)
 
-        self.client.subscribe_to_all_attributes(self.attribute_callback)
-        # Get all states from server
-        self.client.request_attributes(
-            shared_keys=list(self.states.keys()), callback=self.sync_state
-        )
-
     # request attribute callback
     def sync_state(self, result, exception=None):
+        logging.info(f"Synchronizing ThingsBoardDevice {self.__class__.__name__}")
         global period
         if exception is not None:
             print("Exception: " + str(exception))
@@ -106,10 +111,12 @@ class ThingsBoardDevice:
         raise NotImplementedError()
 
     def connect(self):
+        logging.info(f"Connecting ThingsBoardDevice {self.__class__.__name__}")
         if not self.client.is_connected():
             self.client.connect()
 
     def publish(self):
+        logging.info(f"Publishing data for ThingsBoardDevice {self.__class__.__name__}")
         self.connect()
         attributes, telemetry = self.get_data()
         if attributes:
@@ -121,6 +128,80 @@ class ThingsBoardDevice:
 
     def disconnect(self):
         self.client.disconnect()
+
+
+class TempHumDevice(ThingsBoardDevice):
+    devices = []
+
+    def __init__(
+        self,
+        ACCESS_TOKEN,
+        states: dict = {},
+        rpc_callbacks: dict = {},
+        sensors_config=[
+            {"pin": D5, "label": "Top"},
+            {"pin": D6, "label": "Top-middle"},
+            {"pin": D13, "label": "Bottom-middle"},
+            {"pin": D19, "label": "Bottom"},
+        ],
+    ) -> None:
+        rpc_callbacks.update({"getTelemetry": "publish"})
+        # states.update({"blinkingPeriod": 1.0})
+        super().__init__(ACCESS_TOKEN, states, rpc_callbacks)
+
+        for sensor_config in sensors_config:
+            self.devices.append(
+                {
+                    "sensor": adafruit_dht.DHT22(sensor_config["pin"], use_pulseio=False),
+                    "label": sensor_config["label"],
+                }
+            )
+
+    def get_data(self):
+        logging.info("Getting temp humidity telemetry")
+        telemetry = []
+        # import pdb; pdb.set_trace()
+        for device in self.devices:
+            try:
+                logging.info(f"Reading sensor {device['label']}")
+
+                temperature = device["sensor"].temperature
+                humidity = device["sensor"].humidity
+
+                if humidity is not None and temperature is not None:
+                    logging.info(
+                        "Temp={0:0.1f}C  Humidity={1:0.1f}%".format(temperature, humidity)
+                    )
+                else:
+                    logging.info("Failed to retrieve data from humidity sensor")
+
+                telemetry.append(
+                    {
+                        f"temperature_{device['label']}": temperature,
+                        f"humidity_{device['label']}": humidity,
+                    }
+                )
+            except RuntimeError as error:
+                # Errors happen fairly often, DHT's are hard to read, just keep going
+                logging.error(f"Failed reading sensor {device['label']}", exc_info=True)
+            except:
+                logging.error(f"Failed reading sensor {device['label']}. Deactivating", exc_info=True)
+                # try:
+                #     device["sensor"].exit()
+                # except:
+                #     logging.error(f"Failed deactivating sensor {device['label']}", exc_info=True)
+
+            finally:
+                # ✅
+                logging.info("Exiting sensor")
+                time.sleep(2.0)
+                try:
+                    device["sensor"].exit()
+                except:
+                    logging.error(f"Failed deactivating sensor {device['label']}", exc_info=True)
+                print("clear")
+        logging.info(f"Telemetry for temhumidity: {telemetry}")
+        return {}, telemetry
 
 
 class RPIDevice(ThingsBoardDevice):
@@ -144,7 +225,10 @@ class RPIDevice(ThingsBoardDevice):
             2,
         )
         ip_address = (
-            os.popen("""hostname -I""").readline().replace("\n", "").replace(",", ".")[:-1]
+            os.popen("""hostname -I""")
+            .readline()
+            .replace("\n", "")
+            .replace(",", ".")[:-1]
         )
         mac_address = (
             os.popen("""cat /sys/class/net/*/address""")
@@ -176,7 +260,9 @@ class RPIDevice(ThingsBoardDevice):
         boot_time = os.popen("uptime -p").read()[:-1]
         avg_load = (cpu_usage + ram_usage) / 2
         cpu_temp = float(
-            os.popen("cat /sys/class/thermal/thermal_zone0/temp | awk '{print $1/1000}'")
+            os.popen(
+                "cat /sys/class/thermal/thermal_zone0/temp | awk '{print $1/1000}'"
+            )
             .readline()
             .replace("\n", "")
             .replace(",", ".")

@@ -1,6 +1,7 @@
 # Raspberry PI controller for a drying room/rack
 
 ## Requirements
+- `sudo apt install libgpiod2`
 ## Setup
 
 - `sudo cp configs/etc/systemd/system/rpimonitor.service /etc/systemd/system/`

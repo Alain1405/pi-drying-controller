@@ -2,61 +2,61 @@ import sys, signal
 
 import logging
 from schedule_control import ScheduleControl
-from tb_device_client import RPIDevice
-from settings import PUBLISHING_INTERVAL
+from tb_device_client import RPIDevice, TempHumDevice
+from actuators_control import CameraActuator, DummyActuator
+
+from settings import PUBLISHING_INTERVAL, PHOTO_INTERVAL
 import time
 import os
 
 logging.basicConfig(format="%(asctime)s - %(message)s", level=logging.INFO)
 
 
-# from settings import DB_PATH
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger()
 
 
 if __name__ == "__main__":
+    camera = CameraActuator("camera")
+    relay_1 = DummyActuator("relay_1")
+    relay_2 = DummyActuator("relay_2")
+    fan = DummyActuator("fan")
+    heater = DummyActuator("heater")
+
     # Every relay status defaults to 0
     # which means that at every new schedule
     # we only need to specify which relays are on
     schedule = {
         "start_time": None,
-        "actuators": [
-            {"id": 0, "label": "Light"},
-            {"id": 1, "label": "Fan 1"},
-            {"id": 2, "label": "Heat"},
-            {"id": 3, "label": "Fan 3"},
-            {"id": 4, "label": "Fan 4"},
-            {"id": 5, "label": "Fan 5"},
-            {"id": 6, "label": "Fan 6"},
-            {"id": 7, "label": "Fan 7"},
-            {"id": 8, "label": "Fan 8"},
-        ],
         "schedule": [
             {
                 "duration": 30,  # minutes,
                 "actions": [
-                    {"id": 1, "status": 1},
-                    {"id": 2, "status": 1},
+                    {"actuator": relay_1, "status": 1},
+                    {"actuator": relay_2, "status": 1},
                 ],
             },
             {
                 "duration": 30,  # minutes,
                 "actions": [
-                    {"id": 0, "status": 1},
-                    {"id": 4, "status": 1},
-                    {"id": 5, "status": 1},
-                    {"id": 6, "status": 1},
+                    {"actuator": fan, "status": 1},
+                    {"actuator": heater, "status": 1},
                 ],
             },
             {
                 "duration": 30,  # minutes,
                 "actions": [
-                    {"id": 2, "status": 1},
-                    {"id": 3, "status": 1},
-                    {"id": 7, "status": 1},
-                    {"id": 8, "status": 1},
+                    {"actuator": relay_1, "status": 1},
+                    {"actuator": heater, "status": 1},
                 ],
+            },
+        ],
+        "intervals": [
+            {
+                # Take a picture evet 30 min
+                "interval": 30,
+                "actuator": camera,
+                "status": 1,
             },
         ],
     }
@@ -77,10 +77,15 @@ if __name__ == "__main__":
         pi = RPIDevice(
             os.getenv("THINGSBOARD_PI_ACCESS_TOKEN"),
         )
+        th = TempHumDevice(
+            os.getenv("THINGSBOARD_TH_ACCESS_TOKEN"),
+        )
         logging.info("Starting scheduler")
         scheduler.start()
         while True:
+            logger.info("Publishing")
             pi.publish()
+            th.publish()
             time.sleep(PUBLISHING_INTERVAL)
 
     except (KeyboardInterrupt, SystemExit):
