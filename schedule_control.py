@@ -45,7 +45,7 @@ class ScheduleControl:
                 "interval",
                 seconds=monitor_interval,
                 id="scheduler-monitor",
-                jobstore="memory"
+                jobstore="memory",
             )
         # self.scheduler.shutdown()
 
@@ -57,7 +57,6 @@ class ScheduleControl:
         self.actuators.from_actions(schedule["intervals"])
 
         for idx, action in enumerate(schedule["intervals"]):
-
             actuator = action["actuator"]
             actuator_id = id(actuator)
             value = action["status"]
