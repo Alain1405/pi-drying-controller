@@ -22,7 +22,7 @@ class ScheduleControl:
         scheduler_class=BackgroundScheduler,
         start_delay=5,
         monitor=True,
-        monitor_interval=10,
+        monitor_interval=30,
     ) -> None:
         self.actuators = ActuatorsControl()
         jobstore = SQLAlchemyJobStore(url=str(DB_PATH))
@@ -45,8 +45,7 @@ class ScheduleControl:
                 "interval",
                 seconds=monitor_interval,
                 id="scheduler-monitor",
-                jobstore="memory",
-                kwargs={"jobstore": "default"},
+                jobstore="memory"
             )
         # self.scheduler.shutdown()
 
@@ -64,13 +63,15 @@ class ScheduleControl:
             value = action["status"]
             interval = action["interval"]
 
+            # Start the intervals from now
             self.scheduler.add_job(
                 actuator.trigger,
-                jobstore="default",
-                trigger="interval",
+                "interval",
                 minutes=interval,
                 id=f"job-{idx}-{actuator_id}",
+                jobstore="memory",
                 args=[value],
+                start_date=datetime.now() - timedelta(minutes=interval),
             )
 
     def _process_schedule(self, schedule, start_delay):
@@ -121,8 +122,15 @@ class ScheduleControl:
             )
         else:
             if not self.scheduler.get_job("shutdown"):
-                raise Exception(
+                logging.warning(
                     "Existing scheduler found, but no shutdown job was found"
+                )
+                self.scheduler.add_job(
+                    self.actuators.reset_actuators,
+                    jobstore="default",
+                    trigger="date",
+                    run_date=task_start_time,
+                    id=f"shutdown",
                 )
             logging.info("Keeping existing schedule")
 

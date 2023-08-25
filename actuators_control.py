@@ -1,6 +1,10 @@
 import logging
-from camera_controller import take_picture
+
 from abc import ABC
+from time import sleep
+from picamera import PiCamera
+from datetime import datetime
+from settings import IMAGES_FOLDER
 
 logging.basicConfig(format="%(asctime)s - %(message)s", level=logging.INFO)
 
@@ -90,9 +94,27 @@ class CameraActuator(Actuator):
 
     def __init__(self, label, status=0):
         super().__init__(label, status)
-    
+
+    def take_picture(self):
+        with PiCamera() as camera:
+            current_td = datetime.now().strftime("%Y_%m_%d-%I_%M_%S_%p")
+
+            # Set ISO to the desired value
+            camera.iso = 600
+            # Wait for the automatic gain control to settle
+            sleep(2)
+            # Now fix the values
+            camera.shutter_speed = camera.exposure_speed
+            camera.exposure_mode = 'off'
+            g = camera.awb_gains
+            camera.awb_mode = 'off'
+            camera.awb_gains = g
+            # Finally, take a photo with the fixed settings
+            image_name = f'{IMAGES_FOLDER}/image_{current_td}.jpg'
+            camera.capture(image_name)
+ 
     def execute_action(self, value):
         if value == 1:
-            take_picture()
+            self.take_picture()
         else:
             logging.info('Camera is off')

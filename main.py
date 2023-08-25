@@ -58,6 +58,12 @@ if __name__ == "__main__":
                 "actuator": camera,
                 "status": 1,
             },
+            {
+                # Take a picture evet 30 min
+                "interval": 5,
+                "actuator": relay_1,
+                "status": 1,
+            },
         ],
     }
     scheduler = ScheduleControl(schedule, start_delay=5)

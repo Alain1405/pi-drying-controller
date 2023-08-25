@@ -67,7 +67,7 @@ class ThingsBoardDevice:
         logging.info(f"Synchronizing ThingsBoardDevice {self.__class__.__name__}")
         global period
         if exception is not None:
-            print("Exception: " + str(exception))
+            logging.warning("Exception: " + str(exception), exc_info=exception)
         else:
             shared_attributes = result.get("shared", {})
             logging.info("Synchronizing status with server")
@@ -85,7 +85,7 @@ class ThingsBoardDevice:
     # callback function that will call when we will send RPC
     def register_rpc_callbacks(self, id, request_body):
         # request body contains method and other parameters
-        print(f"Received rpc callback with body: {request_body}")
+        logging.info(f"Received rpc callback with body: {request_body}")
         method_key = request_body.get("method")
         if method_key in self.rpc_callbacks.keys():
             cb = None
@@ -199,7 +199,7 @@ class TempHumDevice(ThingsBoardDevice):
                     device["sensor"].exit()
                 except:
                     logging.error(f"Failed deactivating sensor {device['label']}", exc_info=True)
-                print("clear")
+
         logging.info(f"Telemetry for temhumidity: {telemetry}")
         return {}, telemetry
 
