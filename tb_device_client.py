@@ -152,7 +152,9 @@ class TempHumDevice(ThingsBoardDevice):
         for sensor_config in sensors_config:
             self.devices.append(
                 {
-                    "sensor": adafruit_dht.DHT22(sensor_config["pin"], use_pulseio=False),
+                    "sensor": adafruit_dht.DHT22(
+                        sensor_config["pin"], use_pulseio=False
+                    ),
                     "label": sensor_config["label"],
                 }
             )
@@ -170,7 +172,9 @@ class TempHumDevice(ThingsBoardDevice):
 
                 if humidity is not None and temperature is not None:
                     logging.info(
-                        "Temp={0:0.1f}C  Humidity={1:0.1f}%".format(temperature, humidity)
+                        "Temp={0:0.1f}C  Humidity={1:0.1f}%".format(
+                            temperature, humidity
+                        )
                     )
                 else:
                     logging.info("Failed to retrieve data from humidity sensor")
@@ -185,7 +189,10 @@ class TempHumDevice(ThingsBoardDevice):
                 # Errors happen fairly often, DHT's are hard to read, just keep going
                 logging.error(f"Failed reading sensor {device['label']}", exc_info=True)
             except:
-                logging.error(f"Failed reading sensor {device['label']}. Deactivating", exc_info=True)
+                logging.error(
+                    f"Failed reading sensor {device['label']}. Deactivating",
+                    exc_info=True,
+                )
                 # try:
                 #     device["sensor"].exit()
                 # except:
@@ -198,7 +205,9 @@ class TempHumDevice(ThingsBoardDevice):
                 try:
                     device["sensor"].exit()
                 except:
-                    logging.error(f"Failed deactivating sensor {device['label']}", exc_info=True)
+                    logging.error(
+                        f"Failed deactivating sensor {device['label']}", exc_info=True
+                    )
 
         logging.info(f"Telemetry for temhumidity: {telemetry}")
         return {}, telemetry
