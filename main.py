@@ -59,7 +59,6 @@ if __name__ == "__main__":
                 "status": 1,
             },
             {
-                # Take a picture evet 30 min
                 "interval": 5,
                 "actuator": relay_1,
                 "status": 1,

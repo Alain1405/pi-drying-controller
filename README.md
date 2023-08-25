@@ -20,11 +20,11 @@ Aim:
 - Temperature and humidity sensors
 
 ## Module
-- [ ] Gather sensors data
-- [ ] Send sensors data to prometheus
-- [ ] Relays control
+- [x] Gather sensors data
+- [x] Send sensors data to ThingsBoard
 - [x] Schedule of relays
-- [ ] Camera control
+- [x] Camera control
+- [ ] Relays control
 - [ ] Temperature control
 
 ## Resources
