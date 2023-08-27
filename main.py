@@ -79,18 +79,26 @@ if __name__ == "__main__":
     signal.signal(signal.SIGINT, signal_handler)
 
     try:
-        pi = RPIDevice(
-            os.getenv("THINGSBOARD_PI_ACCESS_TOKEN"),
-        )
-        th = TempHumDevice(
-            os.getenv("THINGSBOARD_TH_ACCESS_TOKEN"),
-        )
+        pi = None
+        th = None
+
+        if os.getenv("THINGSBOARD_PI_ACCESS_TOKEN"):
+            pi = RPIDevice(
+                os.getenv("THINGSBOARD_PI_ACCESS_TOKEN"),
+            )
+
+        if os.getenv("THINGSBOARD_TH_ACCESS_TOKEN"):
+            th = TempHumDevice(
+                os.getenv("THINGSBOARD_TH_ACCESS_TOKEN"),
+            )
         logging.info("Starting scheduler")
         scheduler.start()
         while True:
             logger.info("Publishing")
-            pi.publish()
-            th.publish()
+            if pi:
+                pi.publish()
+            if th:
+                th.publish()
             time.sleep(PUBLISHING_INTERVAL)
 
     except (KeyboardInterrupt, SystemExit):
