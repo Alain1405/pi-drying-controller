@@ -2,6 +2,7 @@ import logging
 
 from abc import ABC
 from time import sleep
+import RPi.GPIO as GPIO
 from picamera import PiCamera
 from datetime import datetime
 from settings import IMAGES_FOLDER
@@ -96,26 +97,55 @@ class DummyActuator(Actuator):
 
 
 class CameraActuator(Actuator):
-    def __init__(self, label, status=0):
+    flash_pin = None
+
+    def __init__(self, label, status=0, flash_pin=None):
         super().__init__(label, status)
 
-    def take_picture(self):
-        with PiCamera() as camera:
-            current_td = datetime.now().strftime("%Y_%m_%d-%I_%M_%S_%p")
+        if flash_pin:
+            self.flash_pin = flash_pin
+            GPIO.setmode(GPIO.BCM)
+            # removing the warings
+            GPIO.setwarnings(False)
+            # setting the mode for all pins so all will be switched on
+            GPIO.setup(self.flash_pin, GPIO.OUT)
+            self.flash_off()
 
-            # Set ISO to the desired value
-            camera.iso = 600
-            # Wait for the automatic gain control to settle
-            sleep(2)
-            # Now fix the values
-            camera.shutter_speed = camera.exposure_speed
-            camera.exposure_mode = "off"
-            g = camera.awb_gains
-            camera.awb_mode = "off"
-            camera.awb_gains = g
-            # Finally, take a photo with the fixed settings
-            image_name = f"{IMAGES_FOLDER}/image_{current_td}.jpg"
-            camera.capture(image_name)
+    def flash_off(self):
+        if self.flash_pin:
+            logging.info("De-activating flash")
+            GPIO.output(self.flash_pin, GPIO.HIGH)
+
+    def flash_on(self):
+        if self.flash_pin:
+            logging.info("Activating flash")
+            GPIO.output(self.flash_pin, GPIO.LOW)
+
+    def take_picture(self):
+        try:
+            with PiCamera() as camera:
+                if self.flash_pin:
+                    self.flash_on()
+                    sleep(2)
+                current_td = datetime.now().strftime("%Y_%m_%d-%I_%M_%S_%p")
+                # Set ISO to the desired value
+                camera.iso = 600
+                # Wait for the automatic gain control to settle
+                sleep(2)
+                # Now fix the values
+                camera.shutter_speed = camera.exposure_speed
+                camera.exposure_mode = "off"
+                g = camera.awb_gains
+                camera.awb_mode = "off"
+                camera.awb_gains = g
+                # Finally, take a photo with the fixed settings
+                image_name = f"{IMAGES_FOLDER}/image_{current_td}.jpg"
+                camera.capture(image_name)
+
+        finally:
+            logging.info("Deactivating the flash")
+            if self.flash_pin:
+                self.flash_off()
 
     def execute_action(self, value):
         if value == 1:
